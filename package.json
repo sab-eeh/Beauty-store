@@ -1,0 +1,13 @@
+{
+  "name": "beauty-ecommerce-mern",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm --prefix Backend run dev\" \"npm --prefix Frontend run dev\"",
+    "dev:server": "npm --prefix Backend run dev",
+    "dev:client": "npm --prefix Frontend run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
