@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import toast from "react-hot-toast";
 
 import useAppStore from "../store/useAppStore";
@@ -124,14 +124,14 @@ export default function MainLayout() {
         </div>
       </header>
 
-      <motion.main
+      <Motion.main
         className="container-page py-8"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
       >
         <Outlet />
-      </motion.main>
+      </Motion.main>
 
       <footer className="border-t">
         <div className="container-page py-6 text-xs text-slate-500">

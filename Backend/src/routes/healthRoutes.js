@@ -1,6 +1,8 @@
-const router = require("express").Router();
+import express from "express";
 
-router.get("/health", (req, res) => {
+const router = express.Router();
+
+router.get(["/", "/health"], (req, res) => {
   res.json({
     success: true,
     message: "API is healthy ✅",
@@ -8,4 +10,4 @@ router.get("/health", (req, res) => {
   });
 });
 
-module.exports = router;
+export default router;

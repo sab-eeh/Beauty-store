@@ -1,8 +1,8 @@
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 
 export default function Page({ title, subtitle, right, children }) {
   return (
-    <motion.section
+    <Motion.section
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
@@ -21,6 +21,6 @@ export default function Page({ title, subtitle, right, children }) {
       )}
 
       {children}
-    </motion.section>
+    </Motion.section>
   );
 }

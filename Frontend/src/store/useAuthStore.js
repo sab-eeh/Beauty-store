@@ -11,7 +11,7 @@ function safeParse(raw, fallback) {
   }
 }
 
-export default create((set, get) => ({
+export default create((set) => ({
   user: null,
   token: null, // placeholder
 

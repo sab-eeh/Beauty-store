@@ -27,9 +27,10 @@ function formatDate(iso) {
 }
 
 const STATUS_FLOW = ["placed", "processing", "shipped", "delivered"];
+const EMPTY_ORDERS = [];
 
 export default function AdminOrdersPage() {
-  const orders = useAppStore((s) => s.orders) || [];
+  const orders = useAppStore((s) => s.orders) || EMPTY_ORDERS;
   const updateOrderStatus = useAppStore((s) => s.updateOrderStatus);
 
   const [openId, setOpenId] = useState(null);

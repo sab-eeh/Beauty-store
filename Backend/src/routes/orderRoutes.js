@@ -18,8 +18,8 @@ router.get("/my", protect, getMyOrders);
 router.get("/:id", protect, getOrderById);
 
 // Admin
-router.get("/", protect, admin, adminGetAllOrders);
-router.patch("/:id/status", protect, admin, adminUpdateOrderStatus);
-router.patch("/:id/payment", protect, admin, adminUpdatePaymentStatus);
+router.get("/", protect, adminOnly, adminGetAllOrders);
+router.patch("/:id/status", protect, adminOnly, adminUpdateOrderStatus);
+router.patch("/:id/payment", protect, adminOnly, adminUpdatePaymentStatus);
 
 export default router;

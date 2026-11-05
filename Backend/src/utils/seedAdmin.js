@@ -18,5 +18,5 @@ export async function seedAdmin() {
   });
 
   await admin.save();
-  console.log(`✅ Admin seeded: ${adminEmail} / ${adminPass}`);
+  console.log(`✅ Admin seeded: ${adminEmail}`);
 }

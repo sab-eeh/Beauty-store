@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import SectionHeading from "../components/common/SectionHeading";
 import CategoryCard from "../components/products/CategoryCard";
 import ProductCard from "../components/products/ProductCard";
@@ -26,7 +26,7 @@ export default function HomePage() {
   return (
     <div className="space-y-10">
       {/* HERO */}
-      <motion.section
+      <Motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
@@ -98,7 +98,7 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-      </motion.section>
+      </Motion.section>
 
       {/* CATEGORIES */}
       <section className="space-y-4">

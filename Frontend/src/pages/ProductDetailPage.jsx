@@ -17,26 +17,34 @@ function formatPKR(value) {
 export default function ProductDetailPage() {
   const { id } = useParams();
   const addToCart = useAppStore((s) => s.addToCart);
-
-  const [loading, setLoading] = useState(true);
-  const [p, setP] = useState(null);
-  const [activeImg, setActiveImg] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const requestKey = `${id}:${refreshKey}`;
+  const [result, setResult] = useState({
+    requestKey: null,
+    product: null,
+  });
+  const loading = result.requestKey !== requestKey;
+  const p = loading ? null : result.product;
+  const [activeImg, setActiveImg] = useState(0);
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
 
     fetchProductById(id)
-      .then((data) => alive && setP(data))
-      .catch((e) => {
-        toast.error(e.message);
-        alive && setP(null);
+      .then((data) => {
+        if (alive) setResult({ requestKey, product: data });
       })
-      .finally(() => alive && setLoading(false));
+      .catch((e) => {
+        if (!alive) return;
+        toast.error(e.message);
+        setResult({ requestKey, product: null });
+      })
 
-    return () => (alive = false);
-  }, [id, refreshKey]);
+    return () => {
+      alive = false;
+    };
+  }, [id, requestKey]);
 
   const outOfStock = (p?.stock ?? 0) <= 0;
 

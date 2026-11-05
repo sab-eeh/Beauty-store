@@ -4,6 +4,8 @@ import useAppStore from "../../store/useAppStore";
 import StatusBadge from "../../components/common/StatusBadge";
 import { getAllProducts } from "../../api/mockDb";
 
+const EMPTY_ORDERS = [];
+
 function formatPKR(value) {
   return new Intl.NumberFormat("en-PK", {
     style: "currency",
@@ -38,7 +40,7 @@ function KpiCard({ label, value, hint, action }) {
 }
 
 export default function AdminDashboardPage() {
-  const orders = useAppStore((s) => s.orders) || [];
+  const orders = useAppStore((s) => s.orders) || EMPTY_ORDERS;
 
   const {
     productsCount,

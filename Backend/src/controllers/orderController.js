@@ -9,10 +9,7 @@ const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
 
 function pickStockField(productDoc) {
-  if (productDoc && typeof productDoc.stockQty === "number") return "stockQty";
-  if (productDoc && typeof productDoc.countInStock === "number")
-    return "countInStock";
-  return null;
+  return productDoc && typeof productDoc.stock === "number" ? "stock" : null;
 }
 
 function safeTitle(p) {
@@ -31,6 +28,102 @@ function calcShippingFee(subtotal) {
   // Free shipping above 5000, otherwise 250
   if (subtotal >= 5000) return 0;
   return 250;
+}
+
+function isTransactionUnsupported(err) {
+  return (
+    err?.code === 20 ||
+    /Transaction numbers are only allowed on a replica set member or mongos/i.test(
+      err?.message || ""
+    )
+  );
+}
+
+async function createOrderWithoutTransaction({
+  userId,
+  orderItems,
+  shippingAddress,
+  paymentMethod,
+  subtotal,
+  shippingFee,
+  total,
+  notes,
+}) {
+  const decrementedStock = [];
+  let createdOrder = null;
+
+  try {
+    for (const item of orderItems) {
+      const updatedProduct = await Product.findOneAndUpdate(
+        { _id: item.productId, stock: { $gte: item.qty } },
+        { $inc: { stock: -item.qty } },
+        { new: true }
+      );
+      if (!updatedProduct) {
+        throw new Error(`Not enough stock for: ${item.title}`);
+      }
+      decrementedStock.push({ productId: item.productId, qty: item.qty });
+    }
+
+    createdOrder = await Order.create({
+      userId,
+      orderItems,
+      shippingAddress,
+      paymentMethod,
+      paymentStatus: "pending",
+      status: "placed",
+      subtotal,
+      shippingFee,
+      total,
+      notes,
+    });
+
+    const clearedCart = await Cart.findOneAndUpdate(
+      { userId },
+      { $set: { items: [] } }
+    );
+    if (!clearedCart) throw new Error("Cart not found while placing order");
+
+    return createdOrder;
+  } catch (err) {
+    const rollbackErrors = [];
+    if (createdOrder) {
+      try {
+        const deletion = await Order.deleteOne({ _id: createdOrder._id });
+        if (deletion.deletedCount !== 1) {
+          throw new Error("Created order could not be removed during rollback");
+        }
+      } catch (rollbackErr) {
+        rollbackErrors.push(rollbackErr);
+      }
+    }
+
+    if (rollbackErrors.length === 0) {
+      for (const item of decrementedStock.reverse()) {
+        try {
+          const restoration = await Product.updateOne(
+            { _id: item.productId },
+            { $inc: { stock: item.qty } }
+          );
+          if (restoration.matchedCount !== 1) {
+            throw new Error(`Product ${item.productId} could not be restored`);
+          }
+        } catch (rollbackErr) {
+          rollbackErrors.push(rollbackErr);
+        }
+      }
+    }
+
+    if (rollbackErrors.length) {
+      console.error("Order rollback was incomplete:", rollbackErrors);
+      throw new AggregateError(
+        [err, ...rollbackErrors],
+        "Order failed and rollback was incomplete"
+      );
+    }
+
+    throw err;
+  }
 }
 
 // POST /api/orders  (create order from cart)
@@ -60,7 +153,7 @@ export const createOrderFromCart = asyncHandler(async (req, res) => {
   // Load latest product data (don’t trust client/cart snapshots for price/stock)
   const productIds = cart.items.map((i) => i.productId);
   const products = await Product.find({ _id: { $in: productIds } }).select(
-    "title name price images image stockQty countInStock"
+    "title price images stock"
   );
   const map = new Map(products.map((p) => [String(p._id), p]));
 
@@ -103,66 +196,72 @@ export const createOrderFromCart = asyncHandler(async (req, res) => {
   let createdOrder = null;
 
   try {
-    await session.withTransaction(async () => {
-      // 1) Reduce stock atomically for each item
-      for (const it of orderItems) {
-        const p = map.get(String(it.productId));
-        const stockField = pickStockField(p);
+    try {
+      await session.withTransaction(async () => {
+        for (const item of orderItems) {
+          const product = map.get(String(item.productId));
+          if (!pickStockField(product)) {
+            throw new Error("Product stock field not found (expected stock)");
+          }
 
-        if (!stockField) {
-          // If you don’t store stock, you can skip this check.
-          // But since you likely do, it’s safer to enforce.
-          throw new Error(
-            "Product stock field not found (expected stockQty or countInStock)"
+          const updated = await Product.findOneAndUpdate(
+            { _id: item.productId, stock: { $gte: item.qty } },
+            { $inc: { stock: -item.qty } },
+            { new: true, session }
           );
+          if (!updated) {
+            throw new Error(`Not enough stock for: ${item.title}`);
+          }
         }
 
-        const query = { _id: it.productId, [stockField]: { $gte: it.qty } };
-        const update = { $inc: { [stockField]: -it.qty } };
+        createdOrder = await Order.create(
+          [
+            {
+              userId: req.user._id,
+              orderItems,
+              shippingAddress,
+              paymentMethod,
+              paymentStatus: "pending",
+              status: "placed",
+              subtotal,
+              shippingFee,
+              total,
+              notes,
+            },
+          ],
+          { session }
+        );
 
-        const updated = await Product.findOneAndUpdate(query, update, {
-          new: true,
-          session,
-        });
-        if (!updated) {
-          throw new Error(`Not enough stock for: ${it.title}`);
-        }
-      }
+        const clearedCart = await Cart.findOneAndUpdate(
+          { userId: req.user._id },
+          { $set: { items: [] } },
+          { session }
+        );
+        if (!clearedCart) throw new Error("Cart not found while placing order");
+      });
+    } catch (err) {
+      if (!isTransactionUnsupported(err)) throw err;
 
-      // 2) Create order
-      createdOrder = await Order.create(
-        [
-          {
-            userId: req.user._id,
-            orderItems,
-            shippingAddress,
-            paymentMethod,
-            paymentStatus: "pending",
-            status: "placed",
-            subtotal,
-            shippingFee,
-            total,
-            notes,
-          },
-        ],
-        { session }
-      );
-
-      // 3) Clear cart
-      await Cart.findOneAndUpdate(
-        { userId: req.user._id },
-        { $set: { items: [] } },
-        { session }
-      );
-    });
+      await session.endSession();
+      createdOrder = await createOrderWithoutTransaction({
+        userId: req.user._id,
+        orderItems,
+        shippingAddress,
+        paymentMethod,
+        subtotal,
+        shippingFee,
+        total,
+        notes,
+      });
+    }
 
     const orderDoc = createdOrder?.[0] || createdOrder;
     return res.status(201).json({ order: orderDoc });
   } catch (err) {
-    // If transactions aren't supported, this error could happen depending on Mongo setup
-    return res
-      .status(400)
-      .json({ message: err.message || "Order creation failed" });
+    if (err.message?.startsWith("Not enough stock for:")) {
+      return res.status(400).json({ message: err.message });
+    }
+    throw err;
   } finally {
     await session.endSession();
   }
@@ -183,7 +282,7 @@ export const getOrderById = asyncHandler(async (req, res) => {
 
   // user can only see own order, admin can see all
   const isOwner = String(order.userId) === String(req.user._id);
-  if (!isOwner && !req.user?.isAdmin) {
+  if (!isOwner && req.user?.role !== "admin") {
     return res.status(403).json({ message: "Not allowed" });
   }
 

@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import StatusBadge from "../components/common/StatusBadge";
 import useAppStore from "../store/useAppStore";
 
+const EMPTY_ORDERS = [];
+
 function formatPKR(value) {
   return new Intl.NumberFormat("en-PK", {
     style: "currency",
@@ -25,7 +27,7 @@ function formatDate(iso) {
 }
 
 export default function OrdersPage() {
-  const orders = useAppStore((s) => s.orders) || [];
+  const orders = useAppStore((s) => s.orders) || EMPTY_ORDERS;
   const [openId, setOpenId] = useState(null);
 
   const hasOrders = orders.length > 0;

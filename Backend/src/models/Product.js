@@ -42,8 +42,6 @@ const productSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-productSchema.index({ slug: 1 }, { unique: true });
-
 // Text search for products
 productSchema.index({ title: "text", brand: "text", tags: "text" });
 

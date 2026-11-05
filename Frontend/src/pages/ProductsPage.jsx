@@ -5,6 +5,8 @@ import ProductCard from "../components/products/ProductCard";
 import ProductsToolbar from "../components/products/ProductsToolbar";
 import Page from "../components/common/Page";
 
+const EMPTY_PRODUCTS = [];
+
 function SkeletonCard() {
   return (
     <div className="overflow-hidden rounded-2xl border bg-white shadow-soft">
@@ -27,28 +29,28 @@ export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "");
-  const [loading, setLoading] = useState(true);
-  const [list, setList] = useState([]);
+  const queryKey = JSON.stringify([search, category]);
+  const [result, setResult] = useState({ queryKey: null, list: EMPTY_PRODUCTS });
+  const loading = result.queryKey !== queryKey;
+  const list = loading ? EMPTY_PRODUCTS : result.list;
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
 
     fetchProducts({ search, category })
       .then((data) => {
         if (!alive) return;
-        setList(data);
+        setResult({ queryKey, list: data });
       })
       .catch(() => {
         if (!alive) return;
-        setList([]);
-      })
-      .finally(() => alive && setLoading(false));
+        setResult({ queryKey, list: EMPTY_PRODUCTS });
+      });
 
     return () => {
       alive = false;
     };
-  }, [search, category]);
+  }, [search, category, queryKey]);
 
   useEffect(() => {
     const next = {};

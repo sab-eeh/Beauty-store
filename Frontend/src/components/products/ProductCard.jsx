@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import toast from "react-hot-toast";
 import useAppStore from "../../store/useAppStore";
 
@@ -15,12 +15,18 @@ export default function ProductCard({ product }) {
   const addToCart = useAppStore((s) => s.addToCart);
 
   const onAdd = () => {
-    addToCart(product, 1);
+    addToCart({
+      productId: product._id,
+      title: product.title,
+      price: product.price,
+      image: product.images?.[0],
+      stock: product.stock,
+    });
     toast.success("Added to cart");
   };
 
   return (
-    <motion.div
+    <Motion.div
       initial={{ opacity: 0, y: 8 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -84,6 +90,6 @@ export default function ProductCard({ product }) {
           </button>
         </div>
       </div>
-    </motion.div>
+    </Motion.div>
   );
 }

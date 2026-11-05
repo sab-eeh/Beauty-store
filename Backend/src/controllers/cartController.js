@@ -1,186 +1,141 @@
-const Cart = require("../models/Cart");
-const Product = require("../models/Product");
-const asyncHandler = require("../utils/asyncHandler");
+import mongoose from "mongoose";
+import Cart from "../models/Cart.js";
+import Product from "../models/Product.js";
 
-function clampQty(qty) {
-  const n = Number(qty);
-  if (!Number.isFinite(n)) return null;
-  const int = Math.floor(n);
-  if (int < 1 || int > 99) return null;
-  return int;
+const asyncHandler = (handler) => (req, res, next) =>
+  Promise.resolve(handler(req, res, next)).catch(next);
+
+function isValidProductId(productId) {
+  return mongoose.Types.ObjectId.isValid(productId);
 }
 
-async function getOrCreateCart(userId) {
-  let cart = await Cart.findOne({ user: userId });
-  if (!cart) cart = await Cart.create({ user: userId, items: [] });
-  return cart;
-}
+function mapCartResponse(cart) {
+  const items = (cart.items || []).map((item) => {
+    const product = item.productId;
+    const price = product?.price ?? 0;
+    const qty = item.qty ?? 0;
 
-function mapCartResponse(cartPopulated) {
-  const items = (cartPopulated.items || []).map((it) => {
-    const p = it.product;
-    const price = p?.price ?? 0;
-    const qty = it.qty ?? 0;
-    return {
-      product: p,
-      qty,
-      lineTotal: price * qty,
-    };
+    return { product, qty, lineTotal: price * qty };
   });
 
-  const subtotal = items.reduce((sum, i) => sum + (i.lineTotal || 0), 0);
-
   return {
-    _id: cartPopulated._id,
-    user: cartPopulated.user,
+    _id: cart._id,
+    userId: cart.userId,
     items,
-    subtotal,
-    itemsCount: items.reduce((sum, i) => sum + (i.qty || 0), 0),
-    updatedAt: cartPopulated.updatedAt,
-    createdAt: cartPopulated.createdAt,
+    subtotal: items.reduce((sum, item) => sum + item.lineTotal, 0),
+    itemsCount: items.reduce((sum, item) => sum + item.qty, 0),
+    updatedAt: cart.updatedAt,
+    createdAt: cart.createdAt,
   };
 }
 
-// GET /api/cart
-exports.getMyCart = asyncHandler(async (req, res) => {
-  const cart = await getOrCreateCart(req.user._id);
+async function getOrCreateCart(userId) {
+  let cart = await Cart.findOne({ userId });
+  if (!cart) cart = await Cart.create({ userId, items: [] });
+  return cart;
+}
 
-  const populated = await Cart.findById(cart._id).populate({
-    path: "items.product",
-    select: "name price images stockQty category slug",
-    populate: { path: "category", select: "name slug" },
+async function getPopulatedCart(cartId) {
+  return Cart.findById(cartId).populate({
+    path: "items.productId",
+    select: "title price images stock categoryId slug",
   });
+}
 
+function invalidCartItem(res) {
+  return res
+    .status(400)
+    .json({ message: "productId and valid qty (1-99) required" });
+}
+
+export const getMyCart = asyncHandler(async (req, res) => {
+  const cart = await getOrCreateCart(req.user._id);
+  const populated = await getPopulatedCart(cart._id);
   res.json({ cart: mapCartResponse(populated) });
 });
 
-// POST /api/cart/items  { productId, qty }
-exports.addItem = asyncHandler(async (req, res) => {
+export const addItem = asyncHandler(async (req, res) => {
   const { productId, qty = 1 } = req.body;
-
-  const q = clampQty(qty);
-  if (!productId || !q) {
-    return res
-      .status(400)
-      .json({ message: "productId and valid qty (1-99) required" });
+  if (!isValidProductId(productId) || !Number.isInteger(qty) || qty < 1 || qty > 99) {
+    return invalidCartItem(res);
   }
 
-  const product = await Product.findById(productId).select("stockQty");
+  const product = await Product.findById(productId).select("stock");
   if (!product) return res.status(404).json({ message: "Product not found" });
 
-  // Optional stock guard (recommended)
-  if (typeof product.stockQty === "number" && product.stockQty < q) {
+  const cart = await getOrCreateCart(req.user._id);
+  const item = cart.items.find(
+    (entry) => String(entry.productId) === String(productId)
+  );
+  const nextQty = (item?.qty || 0) + qty;
+
+  if (nextQty > 99) {
+    return res.status(400).json({ message: "Max qty per item is 99" });
+  }
+  if (product.stock < nextQty) {
     return res.status(400).json({ message: "Not enough stock" });
   }
 
-  const cart = await getOrCreateCart(req.user._id);
-
-  const idx = cart.items.findIndex(
-    (it) => String(it.product) === String(productId)
-  );
-  if (idx >= 0) {
-    const newQty = cart.items[idx].qty + q;
-
-    if (newQty > 99) {
-      return res.status(400).json({ message: "Max qty per item is 99" });
-    }
-    if (typeof product.stockQty === "number" && product.stockQty < newQty) {
-      return res.status(400).json({ message: "Not enough stock" });
-    }
-
-    cart.items[idx].qty = newQty;
-  } else {
-    cart.items.push({ product: productId, qty: q });
-  }
+  if (item) item.qty = nextQty;
+  else cart.items.push({ productId, qty });
 
   await cart.save();
-
-  const populated = await Cart.findById(cart._id).populate({
-    path: "items.product",
-    select: "name price images stockQty category slug",
-    populate: { path: "category", select: "name slug" },
-  });
-
+  const populated = await getPopulatedCart(cart._id);
   res.status(201).json({ cart: mapCartResponse(populated) });
 });
 
-// PATCH /api/cart/items  { productId, qty }
-exports.setItemQty = asyncHandler(async (req, res) => {
+export const setItemQty = asyncHandler(async (req, res) => {
   const { productId, qty } = req.body;
-  if (!productId)
-    return res.status(400).json({ message: "productId required" });
-
-  const n = Number(qty);
-  if (!Number.isFinite(n) || n < 0 || n > 99) {
-    return res.status(400).json({ message: "qty must be between 0 and 99" });
+  if (!isValidProductId(productId) || !Number.isInteger(qty) || qty < 0 || qty > 99) {
+    return res
+      .status(400)
+      .json({ message: "productId and qty between 0 and 99 are required" });
   }
 
-  const product = await Product.findById(productId).select("stockQty");
+  const product = await Product.findById(productId).select("stock");
   if (!product) return res.status(404).json({ message: "Product not found" });
 
   const cart = await getOrCreateCart(req.user._id);
-  const idx = cart.items.findIndex(
-    (it) => String(it.product) === String(productId)
+  const index = cart.items.findIndex(
+    (entry) => String(entry.productId) === String(productId)
   );
-  if (idx < 0) return res.status(404).json({ message: "Item not in cart" });
+  if (index < 0) return res.status(404).json({ message: "Item not in cart" });
 
-  // qty=0 means remove
-  if (n === 0) {
-    cart.items.splice(idx, 1);
-  } else {
-    if (typeof product.stockQty === "number" && product.stockQty < n) {
+  if (qty === 0) cart.items.splice(index, 1);
+  else {
+    if (product.stock < qty) {
       return res.status(400).json({ message: "Not enough stock" });
     }
-    cart.items[idx].qty = Math.floor(n);
+    cart.items[index].qty = qty;
   }
 
   await cart.save();
-
-  const populated = await Cart.findById(cart._id).populate({
-    path: "items.product",
-    select: "name price images stockQty category slug",
-    populate: { path: "category", select: "name slug" },
-  });
-
+  const populated = await getPopulatedCart(cart._id);
   res.json({ cart: mapCartResponse(populated) });
 });
 
-// DELETE /api/cart/items/:productId
-exports.removeItem = asyncHandler(async (req, res) => {
+export const removeItem = asyncHandler(async (req, res) => {
   const { productId } = req.params;
-  const cart = await getOrCreateCart(req.user._id);
-
-  const before = cart.items.length;
-  cart.items = cart.items.filter(
-    (it) => String(it.product) !== String(productId)
-  );
-
-  if (cart.items.length === before) {
-    return res.status(404).json({ message: "Item not in cart" });
+  if (!isValidProductId(productId)) {
+    return res.status(400).json({ message: "Invalid productId" });
   }
 
+  const cart = await getOrCreateCart(req.user._id);
+  const index = cart.items.findIndex(
+    (entry) => String(entry.productId) === String(productId)
+  );
+  if (index < 0) return res.status(404).json({ message: "Item not in cart" });
+
+  cart.items.splice(index, 1);
   await cart.save();
-
-  const populated = await Cart.findById(cart._id).populate({
-    path: "items.product",
-    select: "name price images stockQty category slug",
-    populate: { path: "category", select: "name slug" },
-  });
-
+  const populated = await getPopulatedCart(cart._id);
   res.json({ cart: mapCartResponse(populated) });
 });
 
-// DELETE /api/cart
-exports.clearCart = asyncHandler(async (req, res) => {
+export const clearCart = asyncHandler(async (req, res) => {
   const cart = await getOrCreateCart(req.user._id);
   cart.items = [];
   await cart.save();
-
-  const populated = await Cart.findById(cart._id).populate({
-    path: "items.product",
-    select: "name price images stockQty category slug",
-    populate: { path: "category", select: "name slug" },
-  });
-
+  const populated = await getPopulatedCart(cart._id);
   res.json({ cart: mapCartResponse(populated) });
 });

@@ -1,15 +1,21 @@
-const express = require("express");
-const router = express.Router();
+import express from "express";
+import {
+  addItem,
+  clearCart,
+  getMyCart,
+  removeItem,
+  setItemQty,
+} from "../controllers/cartController.js";
+import { protect } from "../middlewares/authMiddleware.js";
 
-const cartController = require("../controllers/cartController");
-const { protect } = require("../middleware/authMiddleware"); // adjust name/path to your project
+const router = express.Router();
 
 router.use(protect);
 
-router.get("/", cartController.getMyCart);
-router.post("/items", cartController.addItem);
-router.patch("/items", cartController.setItemQty);
-router.delete("/items/:productId", cartController.removeItem);
-router.delete("/", cartController.clearCart);
+router.get("/", getMyCart);
+router.post("/items", addItem);
+router.patch("/items", setItemQty);
+router.delete("/items/:productId", removeItem);
+router.delete("/", clearCart);
 
-module.exports = router;
+export default router;

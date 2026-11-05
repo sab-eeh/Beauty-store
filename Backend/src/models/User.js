@@ -24,7 +24,6 @@ const userSchema = new mongoose.Schema(
       trim: true,
       lowercase: true,
       unique: true,
-      index: true,
     },
     passwordHash: { type: String, required: true },
     role: {
@@ -39,9 +38,6 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
-// Ensure unique index is created
-userSchema.index({ email: 1 }, { unique: true });
 
 // Virtual: set password
 userSchema.virtual("password").set(function (password) {
