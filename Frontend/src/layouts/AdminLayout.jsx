@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import useAuthStore from "../store/useAuthStore";
 
@@ -21,6 +21,7 @@ function SideLink({ to, children }) {
 }
 
 export default function AdminLayout() {
+  const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
 
   return (
@@ -42,7 +43,7 @@ export default function AdminLayout() {
             onClick={() => {
               logout();
               toast.success("Logged out");
-              window.location.href = "/admin/login";
+              navigate("/admin/login", { replace: true });
             }}
             className="mt-5 w-full rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50"
           >

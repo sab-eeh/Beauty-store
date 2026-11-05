@@ -9,7 +9,13 @@
     "frontend": {
       "root": "Frontend",
       "framework": "vite",
-      "devCommand": "npm run dev"
+      "devCommand": "npm run dev",
+      "rewrites": [
+        {
+          "source": "/(.*)",
+          "destination": "/index.html"
+        }
+      ]
     }
   },
   "rewrites": [
