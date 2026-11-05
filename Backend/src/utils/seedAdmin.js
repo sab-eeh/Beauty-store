@@ -1,22 +1,35 @@
 import User from "../models/User.js";
 
+let seedPromise;
+
 export async function seedAdmin() {
-  const adminEmail = (
-    process.env.ADMIN_EMAIL || "admin@beautystore.com"
-  ).toLowerCase();
-  const adminPass = process.env.ADMIN_PASSWORD || "admin123";
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const adminPass = process.env.ADMIN_PASSWORD;
 
-  const exists = await User.findOne({ email: adminEmail });
-  if (exists) return;
+  if (!adminEmail || !adminPass) {
+    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD must be configured.");
+  }
 
-  const admin = new User({
-    name: "Admin",
-    email: adminEmail,
-    password: adminPass, // uses virtual setter -> passwordHash
-    role: "admin",
-    isActive: true,
-  });
+  if (!seedPromise) {
+    seedPromise = (async () => {
+      const exists = await User.findOne({ email: adminEmail });
+      if (exists) return;
 
-  await admin.save();
-  console.log(`✅ Admin seeded: ${adminEmail}`);
+      const admin = new User({
+        name: "Admin",
+        email: adminEmail,
+        password: adminPass,
+        role: "admin",
+        isActive: true,
+      });
+
+      await admin.save();
+      console.log(`✅ Admin seeded: ${adminEmail}`);
+    })().catch((error) => {
+      seedPromise = undefined;
+      throw error;
+    });
+  }
+
+  return seedPromise;
 }
