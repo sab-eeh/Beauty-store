@@ -43,7 +43,7 @@ export default function AdminLayout() {
             onClick={() => {
               logout();
               toast.success("Logged out");
-              navigate("/admin/login", { replace: true });
+              navigate("/", { replace: true });
             }}
             className="mt-5 w-full rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50"
           >
