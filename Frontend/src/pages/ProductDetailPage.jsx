@@ -98,24 +98,25 @@ export default function ProductDetailPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="space-y-3">
-          <div className="overflow-hidden rounded-2xl border bg-white shadow-soft">
+          <div className="aspect-[4/3] overflow-hidden rounded-2xl border bg-white shadow-soft sm:aspect-square md:aspect-[4/3]">
             <img
               src={p.images?.[activeImg]}
               alt={p.title}
-              className="h-[420px] w-full object-cover"
+              className="h-full w-full object-cover"
             />
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             {p.images?.map((img, idx) => (
               <button
                 key={img}
                 onClick={() => setActiveImg(idx)}
+                aria-label={`View product image ${idx + 1}`}
                 className={`overflow-hidden rounded-xl border bg-white ${
                   activeImg === idx ? "border-slate-900" : "border-slate-200"
                 }`}
               >
-                <img src={img} alt="" className="h-16 w-20 object-cover" />
+                <img src={img} alt="" className="h-14 w-16 object-cover sm:h-16 sm:w-20" />
               </button>
             ))}
           </div>
@@ -131,7 +132,7 @@ export default function ProductDetailPage() {
             <div className="text-xs font-semibold text-slate-500">
               {p.brand}
             </div>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight">
+            <h1 className="mt-1 break-words text-2xl font-bold tracking-tight sm:text-3xl">
               {p.title}
             </h1>
             <div className="mt-2 text-sm text-slate-600">
@@ -151,7 +152,7 @@ export default function ProductDetailPage() {
           <button
             onClick={onAdd}
             disabled={outOfStock}
-            className={`w-full rounded-xl px-4 py-3 text-sm font-semibold shadow-soft transition ${
+            className={`min-h-11 w-full rounded-xl px-4 py-3 text-sm font-semibold shadow-soft transition ${
               outOfStock
                 ? "cursor-not-allowed bg-slate-100 text-slate-400"
                 : "bg-slate-900 text-white hover:bg-slate-800"

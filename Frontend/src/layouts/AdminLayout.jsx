@@ -1,5 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
+import { NavLink, Outlet } from "react-router-dom";
 import useAuthStore from "../store/useAuthStore";
 
 function SideLink({ to, children }) {
@@ -21,19 +20,18 @@ function SideLink({ to, children }) {
 }
 
 export default function AdminLayout() {
-  const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto grid max-w-6xl gap-6 p-4 md:grid-cols-4">
-        <aside className="rounded-2xl border bg-white p-4 shadow-soft md:col-span-1">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-4 p-3 sm:gap-6 sm:p-4 md:grid-cols-4">
+        <aside className="rounded-2xl border bg-white p-3 shadow-soft sm:p-4 md:col-span-1">
           <div className="mb-4">
             <div className="text-sm font-semibold">Admin Panel</div>
             <div className="text-xs text-slate-500">BeautyStore</div>
           </div>
 
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-1">
             <SideLink to="/admin">Dashboard</SideLink>
             <SideLink to="/admin/products">Products</SideLink>
             <SideLink to="/admin/orders">Orders</SideLink>
@@ -42,16 +40,15 @@ export default function AdminLayout() {
           <button
             onClick={() => {
               logout();
-              toast.success("Logged out");
-              navigate("/", { replace: true });
+              window.location.replace("/");
             }}
-            className="mt-5 w-full rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50"
+            className="mt-4 min-h-11 w-full rounded-xl border px-4 py-2 text-sm font-semibold hover:bg-slate-50 md:mt-5"
           >
             Logout
           </button>
         </aside>
 
-        <main className="md:col-span-3">
+        <main className="min-w-0 md:col-span-3">
           <Outlet />
         </main>
       </div>

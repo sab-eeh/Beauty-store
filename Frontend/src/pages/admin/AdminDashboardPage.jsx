@@ -104,7 +104,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="Total Sales"
           value={formatPKR(totalSales)}
@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Latest Orders */}
         <div className="rounded-2xl border bg-white p-5 shadow-soft lg:col-span-2">
           <div className="flex items-center justify-between">
@@ -154,7 +154,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[520px] text-left text-sm">
               <thead className="bg-slate-50 text-xs text-slate-600">
                 <tr>
                   <th className="px-3 py-2">Order</th>
