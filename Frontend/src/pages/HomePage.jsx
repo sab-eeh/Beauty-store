@@ -51,12 +51,6 @@ export default function HomePage() {
                 Shop Now
               </Link>
 
-              <Link
-                to="/admin"
-                className="rounded-xl border bg-white px-5 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50"
-              >
-                Admin Panel
-              </Link>
             </div>
 
           

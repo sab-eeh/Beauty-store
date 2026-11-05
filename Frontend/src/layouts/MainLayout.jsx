@@ -46,15 +46,6 @@ function ProfileMenu({ user, onLogout }) {
           My Orders
         </NavLink>
 
-        {user?.role === "admin" ? (
-          <NavLink
-            to="/admin"
-            className="block rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            Admin Panel
-          </NavLink>
-        ) : null}
-
         <button
           onClick={onLogout}
           className="mt-1 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-rose-700 hover:bg-rose-50"
@@ -105,6 +96,7 @@ export default function MainLayout() {
 
             {/* Keep Orders visible (route itself is protected) */}
             <NavItem to="/orders">Orders</NavItem>
+            <NavItem to="/admin">Admin Panel</NavItem>
 
             {user ? (
               <ProfileMenu
@@ -115,10 +107,7 @@ export default function MainLayout() {
                 }}
               />
             ) : (
-              <div className="flex items-center gap-3">
-                <NavItem to="/login">Login</NavItem>
-                <NavItem to="/register">Register</NavItem>
-              </div>
+              <NavItem to="/login">Login</NavItem>
             )}
           </nav>
         </div>
