@@ -44,6 +44,60 @@ export default function HomePage() {
     },
   ];
 
+  const shoppingHighlights = [
+    {
+      title: "Explore by category",
+      description: "Go straight to makeup, skincare, fragrance, haircare, or tools.",
+      icon: "01",
+    },
+    {
+      title: "Compare the details",
+      description: "Check product descriptions, ratings, and review counts before you choose.",
+      icon: "02",
+    },
+    {
+      title: "Keep it all together",
+      description: "Add your picks to the cart and review everything in one place.",
+      icon: "03",
+    },
+  ];
+
+  const beautyNotes = [
+    {
+      category: "skincare",
+      eyebrow: "SKINCARE",
+      title: "Make room for the everyday essentials",
+      description: "Browse serums and toners to find a simple starting point for your routine.",
+    },
+    {
+      category: "makeup",
+      eyebrow: "MAKEUP",
+      title: "Find a look that feels like you",
+      description: "Explore color and complexion favorites for everyday looks and special plans.",
+    },
+    {
+      category: "fragrance",
+      eyebrow: "FRAGRANCE",
+      title: "Discover a new signature scent",
+      description: "Explore fragrances, compare the details, and find a scent to suit your style.",
+    },
+  ];
+
+  const commonQuestions = [
+    {
+      question: "How do I find products by type?",
+      answer: "Use Shop by Category or the category filter on the Products page to narrow your options.",
+    },
+    {
+      question: "Where can I compare product ratings?",
+      answer: "Product cards show ratings and review counts. Open a product to see its details and reviews.",
+    },
+    {
+      question: "Can I review my items before checkout?",
+      answer: "Yes. Add products to your cart, then open the cart to review quantities and your order summary.",
+    },
+  ];
+
   return (
     <div className="space-y-8 sm:space-y-12">
       {/* HERO */}
@@ -170,6 +224,34 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* SHOPPING HIGHLIGHTS */}
+      <section className="rounded-3xl bg-slate-900 px-5 py-7 text-white sm:px-8 sm:py-9">
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold tracking-[0.18em] text-brand-200">
+            A BETTER WAY TO BROWSE
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
+            Your beauty shopping, made simple
+          </h2>
+        </div>
+        <div className="mt-6 grid gap-3 md:grid-cols-3">
+          {shoppingHighlights.map((item) => (
+            <article
+              key={item.title}
+              className="rounded-2xl border border-white/15 bg-white/5 p-4 sm:p-5"
+            >
+              <span className="text-xs font-bold tracking-widest text-brand-200">
+                {item.icon}
+              </span>
+              <h3 className="mt-3 font-semibold">{item.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                {item.description}
+              </p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       {/* FEATURED */}
       <section className="space-y-4">
         <SectionHeading
@@ -192,6 +274,41 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* BEAUTY NOTES */}
+      <section className="space-y-4">
+        <SectionHeading
+          title="A little inspiration for your routine"
+          subtitle="Browse a few collections and find something new to try."
+        />
+        <div className="grid gap-4 md:grid-cols-3">
+          {beautyNotes.map((note) => (
+            <article
+              key={note.category}
+              className="flex min-h-56 flex-col overflow-hidden rounded-2xl border bg-white shadow-soft"
+            >
+              <div className="h-1.5 bg-gradient-to-r from-brand-300 via-brand-500 to-brand-700" />
+              <div className="flex flex-1 flex-col p-5 sm:p-6">
+                <p className="text-xs font-bold tracking-[0.16em] text-brand-700">
+                  {note.eyebrow}
+                </p>
+                <h3 className="mt-3 text-lg font-semibold leading-6 text-slate-900">
+                  {note.title}
+                </h3>
+                <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">
+                  {note.description}
+                </p>
+                <Link
+                  to={`/products?category=${note.category}`}
+                  className="mt-4 inline-flex min-h-11 items-center self-start text-sm font-semibold text-slate-900 hover:text-brand-700"
+                >
+                  Explore {note.eyebrow.toLowerCase()} <span aria-hidden="true" className="ml-1">→</span>
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
       {/* SHOPPING GUIDE */}
       <section className="rounded-2xl border bg-slate-50 p-5 sm:p-8">
         <div className="mx-auto max-w-3xl text-center">
@@ -209,6 +326,45 @@ export default function HomePage() {
           >
             Explore all beauty
           </Link>
+        </div>
+      </section>
+
+      {/* COMMON QUESTIONS */}
+      <section className="grid gap-6 rounded-3xl border bg-white p-5 sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-10">
+        <div>
+          <p className="text-xs font-semibold tracking-[0.16em] text-brand-700">
+            NEED A HAND?
+          </p>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
+            Shopping made clear
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            A few quick answers to help you browse and choose with confidence.
+          </p>
+          <Link
+            to="/products"
+            className="mt-5 inline-flex min-h-11 items-center rounded-xl border px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+          >
+            Browse products
+          </Link>
+        </div>
+        <div className="divide-y divide-slate-200">
+          {commonQuestions.map((item) => (
+            <details key={item.question} className="group py-4 first:pt-0 last:pb-0">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-sm font-semibold text-slate-900 marker:content-none">
+                {item.question}
+                <span
+                  aria-hidden="true"
+                  className="shrink-0 text-lg text-brand-700 transition group-open:rotate-45"
+                >
+                  +
+                </span>
+              </summary>
+              <p className="mt-2 pr-7 text-sm leading-6 text-slate-600">
+                {item.answer}
+              </p>
+            </details>
+          ))}
         </div>
       </section>
 
